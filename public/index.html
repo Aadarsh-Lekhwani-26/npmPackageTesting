@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArgonCore Integration Demo — RFC 9106 Argon2id Password Authentication</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="brand-icon">🛡️</span>
+        <div class="brand-text">
+          <span class="brand-title">ArgonCore <span class="brand-badge">Demo</span></span>
+          <span class="brand-subtitle">RFC 9106 Argon2id Password Authentication</span>
+        </div>
+      </div>
+      <div class="nav-links">
+        <a href="#auth-section" class="nav-link active">Authentication</a>
+        <a href="#store-section" class="nav-link">User Store</a>
+        <a href="#inspector-section" class="nav-link">Hash Inspector</a>
+        <a href="#lab-section" class="nav-link">Rehash Lab</a>
+        <a href="#concepts-section" class="nav-link">Security Specs</a>
+      </div>
+      <div class="nav-actions">
+        <span class="badge badge-package">argoncore@0.1.0</span>
+        <a href="https://www.npmjs.com/package/argoncore" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">npm</a>
+        <a href="https://github.com/Aadarsh-Lekhwani-26/ArgonCore" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="main-container">
+    <!-- Hero / Info Banner -->
+    <section class="hero-banner">
+      <div class="hero-content">
+        <h1>ArgonCore Package Integration Demo</h1>
+        <p>
+          Demonstrating secure password authentication and transparent policy migration in Node.js &amp; Express using the published 
+          <code>argoncore</code> npm package (pure-JavaScript RFC 9106 Argon2id).
+        </p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span class="metric-label">API Functions Tested</span>
+          <span class="metric-value">hash · verify · needsRehash</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Algorithm</span>
+          <span class="metric-value">Argon2id (v=19 / 0x13)</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Dependencies</span>
+          <span class="metric-value">Zero native bindings</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: AUTHENTICATION ENGINE -->
+    <section id="auth-section" class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-number">01</span>
+          <h2>Authentication Flow (Register &amp; Login)</h2>
+        </div>
+        <p class="section-description">
+          Test user registration with password hashing, constant-time verification on login, and automatic policy rehash detection.
+        </p>
+      </div>
+
+      <div class="auth-grid">
+        <!-- Registration Card -->
+        <div class="card auth-card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">➕</span>
+              <h3>User Registration</h3>
+            </div>
+            <span class="badge badge-primary">hash()</span>
+          </div>
+          <div class="card-body">
+            <form id="register-form">
+              <div class="form-group">
+                <label for="reg-username">Username</label>
+                <input type="text" id="reg-username" placeholder="e.g. dev_sarah" required autocomplete="username">
+                <span class="form-hint">3-30 alphanumeric, hyphen or underscore</span>
+              </div>
+              <div class="form-group">
+                <label for="reg-password">Password</label>
+                <input type="password" id="reg-password" placeholder="Min. 6 characters" required autocomplete="new-password">
+                <span class="form-hint">Plaintext is hashed with Argon2id and NEVER stored</span>
+              </div>
+              <div class="form-group">
+                <label for="reg-profile">Argon2 Cost Profile</label>
+                <select id="reg-profile">
+                  <option value="interactive" selected>Interactive Demo — 1024 KiB, t=1, p=1 (~45ms)</option>
+                  <option value="testing">Ultra Fast — 256 KiB, t=1, p=1 (~25ms)</option>
+                  <option value="microservice">Microservice Balanced — 4096 KiB, t=2, p=2 (~350ms)</option>
+                  <option value="owasp">OWASP Minimum — 19456 KiB, t=2, p=1 (~1.7s)</option>
+                  <option value="rfc9106">RFC 9106 Standard — 65536 KiB, t=3, p=4 (~8.4s)</option>
+                </select>
+                <span class="form-hint" id="profile-hint">Memory-hard password hashing profile</span>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="reg-submit-btn">
+                <span>Register User &amp; Hash Password</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="card auth-card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">🔑</span>
+              <h3>User Login &amp; Rehash</h3>
+            </div>
+            <span class="badge badge-success">verify() + needsRehash()</span>
+          </div>
+          <div class="card-body">
+            <form id="login-form">
+              <div class="form-group">
+                <div class="label-with-actions">
+                  <label for="login-username">Username</label>
+                  <div class="quick-pick">
+                    <span class="quick-label">Seed Users:</span>
+                    <button type="button" class="btn-chip" onclick="quickFill('alice', 'AlicePass123!')">alice (256K)</button>
+                    <button type="button" class="btn-chip" onclick="quickFill('bob', 'BobSecret456!')">bob (1024K)</button>
+                  </div>
+                </div>
+                <input type="text" id="login-username" placeholder="Username" required autocomplete="username">
+              </div>
+              <div class="form-group">
+                <div class="label-with-actions">
+                  <label for="login-password">Password</label>
+                  <button type="button" class="btn-chip" onclick="togglePasswordVisibility('login-password')">Show/Hide</button>
+                </div>
+                <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password">
+                <span class="form-hint">Verified against stored MCF hash in constant time</span>
+              </div>
+              <div class="login-actions-row">
+                <button type="submit" class="btn btn-success btn-block" id="login-submit-btn">
+                  <span>Authenticate Credentials</span>
+                </button>
+                <button type="button" class="btn btn-danger-outline" onclick="testIncorrectPassword()" title="Test incorrect password verification">
+                  <span>Test Wrong Password</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Live Auth Results Terminal -->
+        <div class="card result-card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">📟</span>
+              <h3>Authentication Terminal &amp; Metrics</h3>
+            </div>
+            <span class="status-indicator" id="auth-status-pill">System Ready</span>
+          </div>
+          <div class="card-body">
+            <div class="terminal-container">
+              <div class="terminal-bar">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">live-auth-audit.log</span>
+              </div>
+              <pre id="auth-terminal-output" class="terminal-output">// Authentication event log will appear here after registration or login.
+// Click 'alice' or 'bob' above or register a new user to test.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: IN-MEMORY USER STORE & POLICY MANAGEMENT -->
+    <section id="store-section" class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-number">02</span>
+          <h2>In-Memory User Store &amp; Server Policy</h2>
+        </div>
+        <p class="section-description">
+          Demonstration store persisting only Argon2id MCF hashes in volatile memory. Plaintext passwords are never saved.
+        </p>
+      </div>
+
+      <div class="store-layout">
+        <!-- Store Table Card -->
+        <div class="card store-table-card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">🗄️</span>
+              <h3>Registered Demonstration Accounts</h3>
+              <span class="badge badge-neutral" id="user-count-badge">0 Users</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-secondary" onclick="loadUsers()">🔄 Refresh</button>
+              <button class="btn btn-sm btn-danger" onclick="resetUserStore()">⚠️ Reset to Seed</button>
+            </div>
+          </div>
+          <div class="card-body table-responsive">
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Memory ($m$)</th>
+                  <th>Passes ($t$)</th>
+                  <th>Lanes ($p$)</th>
+                  <th>Rehashes</th>
+                  <th>Argon2id Hash (MCF)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr>
+                  <td colspan="7" class="text-center text-muted">Loading registered accounts...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Policy Configuration Box -->
+        <div class="card policy-card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">⚙️</span>
+              <h3>Active Server Rehash Policy</h3>
+            </div>
+            <span class="badge badge-primary">needsRehash() Rule</span>
+          </div>
+          <div class="card-body">
+            <p class="policy-explanation">
+              When a user authenticates, the server runs <code>needsRehash(storedHash, activePolicy)</code>.
+              If the stored hash uses lower cost parameters than this policy, it is automatically recomputed with the upgraded parameters.
+            </p>
+            <form id="policy-form" onsubmit="updateServerPolicy(event)">
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label for="policy-memory">Min Memory ($m$ KiB)</label>
+                  <input type="number" id="policy-memory" value="1024" min="8" max="65536" step="128" required>
+                </div>
+                <div class="form-group">
+                  <label for="policy-time">Min Time ($t$ passes)</label>
+                  <input type="number" id="policy-time" value="1" min="1" max="10" required>
+                </div>
+                <div class="form-group">
+                  <label for="policy-parallelism">Min Parallelism ($p$ lanes)</label>
+                  <input type="number" id="policy-parallelism" value="1" min="1" max="8" required>
+                </div>
+              </div>
+              <div class="policy-actions">
+                <button type="submit" class="btn btn-primary">Update Server Policy</button>
+                <button type="button" class="btn btn-secondary" onclick="setPolicyPreset(4096, 2, 2)">Set to 4096 KiB (Upgrade Demo)</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: MODULAR CRYPT FORMAT (MCF) HASH INSPECTOR -->
+    <section id="inspector-section" class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-number">03</span>
+          <h2>Argon2id Hash Dissection &amp; Inspection</h2>
+        </div>
+        <p class="section-description">
+          Dissect and visually inspect the Modular Crypt Format (MCF) string generated by ArgonCore according to RFC 9106.
+        </p>
+      </div>
+
+      <div class="card inspector-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="card-icon">🔬</span>
+            <h3>MCF Hash Inspector Panel</h3>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="loadSampleHashToInspect()">Load Sample Hash</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="inspector-input">Argon2 Encoded Hash String (MCF)</label>
+            <div class="input-with-button">
+              <input type="text" id="inspector-input" class="code-font" placeholder="Paste $argon2id$v=19$m=... string here">
+              <button class="btn btn-primary" onclick="dissectHash()">Dissect Hash</button>
+            </div>
+          </div>
+
+          <!-- Visual Token Breakdown -->
+          <div class="token-breakdown-wrap">
+            <label>Component Token Dissection:</label>
+            <div class="token-pills" id="token-pills-container">
+              <span class="token-pill token-type" title="Algorithm Variant">$argon2id$</span>
+              <span class="token-pill token-version" title="Version">$v=19$</span>
+              <span class="token-pill token-memory" title="Memory Cost">m=1024,</span>
+              <span class="token-pill token-time" title="Iterations">t=1,</span>
+              <span class="token-pill token-parallelism" title="Parallelism">p=1$</span>
+              <span class="token-pill token-salt" title="Salt (Base64)">rccxm1hySSQ2LDAIP5awuA$</span>
+              <span class="token-pill token-digest" title="Derived Tag">72nO+cY6UX1hm1D4xhSkk5bHwdIlJ8ag9c6hIg0o+qs</span>
+            </div>
+          </div>
+
+          <!-- Component Breakdown Grid -->
+          <div class="component-details-grid" id="component-grid">
+            <div class="component-box">
+              <span class="comp-badge badge-type">Algorithm</span>
+              <h4 id="comp-type-val">Argon2id</h4>
+              <p id="comp-type-desc">Hybrid mode combining data-independent and data-dependent memory indexing.</p>
+            </div>
+            <div class="component-box">
+              <span class="comp-badge badge-version">Version</span>
+              <h4 id="comp-ver-val">v=19 (0x13)</h4>
+              <p id="comp-ver-desc">Current RFC 9106 standard version.</p>
+            </div>
+            <div class="component-box">
+              <span class="comp-badge badge-memory">Memory Cost ($m$)</span>
+              <h4 id="comp-mem-val">1024 KiB (1 MiB)</h4>
+              <p id="comp-mem-desc">Dedicated RAM matrix size required to compute or crack the hash.</p>
+            </div>
+            <div class="component-box">
+              <span class="comp-badge badge-time">Time Cost ($t$)</span>
+              <h4 id="comp-time-val">1 Pass</h4>
+              <p id="comp-time-desc">Number of full sequential iterations through memory blocks.</p>
+            </div>
+            <div class="component-box">
+              <span class="comp-badge badge-parallelism">Parallelism ($p$)</span>
+              <h4 id="comp-par-val">1 Lane</h4>
+              <p id="comp-par-desc">Degree of parallelism / independent computation lanes.</p>
+            </div>
+            <div class="component-box">
+              <span class="comp-badge badge-salt">Salt ($S$)</span>
+              <h4 id="comp-salt-val">16 Bytes</h4>
+              <p id="comp-salt-desc">Cryptographic random salt in unpadded Base64 preventing rainbow tables.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: VERIFICATION & REHASH LABORATORY -->
+    <section id="lab-section" class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-number">04</span>
+          <h2>ArgonCore Laboratory: verify() &amp; needsRehash()</h2>
+        </div>
+        <p class="section-description">
+          Test candidate passwords and experiment with different security policies against any hash.
+        </p>
+      </div>
+
+      <div class="lab-grid">
+        <!-- Candidate Password Verifier -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">🧪</span>
+              <h3>Direct verify() Tester</h3>
+            </div>
+            <span class="badge badge-success">verify()</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="lab-verify-hash">Target Encoded Hash</label>
+              <input type="text" id="lab-verify-hash" class="code-font" placeholder="Paste hash or select from User Store above">
+            </div>
+            <div class="form-group">
+              <label for="lab-verify-candidate">Candidate Password</label>
+              <input type="text" id="lab-verify-candidate" placeholder="Enter password to test">
+            </div>
+            <div class="btn-group-row">
+              <button class="btn btn-success" onclick="runDirectVerify()">Run verify()</button>
+              <button class="btn btn-secondary" onclick="loadAliceCandidate(true)">Load Alice Correct</button>
+              <button class="btn btn-secondary" onclick="loadAliceCandidate(false)">Load Alice Wrong</button>
+            </div>
+            <div class="lab-result-box" id="verify-result-box">
+              <span class="lab-result-label">Verification Result:</span>
+              <span class="lab-result-value" id="verify-result-val">Awaiting test...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Policy Evaluator needsRehash() -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">📊</span>
+              <h3>Direct needsRehash() Simulator</h3>
+            </div>
+            <span class="badge badge-primary">needsRehash()</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="lab-rehash-hash">Hash to Evaluate</label>
+              <input type="text" id="lab-rehash-hash" class="code-font" placeholder="Paste hash to inspect">
+            </div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="lab-target-m">Target Memory ($m$ KiB)</label>
+                <input type="number" id="lab-target-m" value="4096" min="8" max="65536">
+              </div>
+              <div class="form-group">
+                <label for="lab-target-t">Target Time ($t$)</label>
+                <input type="number" id="lab-target-t" value="2" min="1" max="10">
+              </div>
+              <div class="form-group">
+                <label for="lab-target-p">Target Parallelism ($p$)</label>
+                <input type="number" id="lab-target-p" value="2" min="1" max="8">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="runDirectRehashCheck()">Evaluate Policy with needsRehash()</button>
+            <div class="lab-result-box" id="rehash-result-box">
+              <span class="lab-result-label">Rehash Required:</span>
+              <span class="lab-result-value" id="rehash-result-val">Awaiting test...</span>
+              <ul class="rehash-reasons-list" id="rehash-reasons-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: CRYPTOGRAPHIC CONCEPTS & ARCHITECTURE -->
+    <section id="concepts-section" class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-number">05</span>
+          <h2>Argon2id Architecture &amp; Parameter Roles</h2>
+        </div>
+        <p class="section-description">
+          How Argon2id (RFC 9106) defeats password cracking attacks and why parameter tuning matters.
+        </p>
+      </div>
+
+      <div class="concepts-grid">
+        <div class="card concept-card">
+          <div class="concept-icon">🧠</div>
+          <h3>Memory Cost ($m$)</h3>
+          <p class="concept-role">Memory Hardness &amp; ASIC Resistance</p>
+          <p>
+            Defines the total size of the internal 2D memory block matrix in KiB ($8 \times p \le m \le 2\text{ GiB}$). 
+            Because each block lookup requires accessing high-speed RAM, brute-force attackers using GPUs or custom ASICs cannot parallelize attacks without incurring massive physical memory costs.
+          </p>
+        </div>
+
+        <div class="card concept-card">
+          <div class="concept-icon">⏱️</div>
+          <h3>Time Cost ($t$)</h3>
+          <p class="concept-role">Sequential Iterations</p>
+          <p>
+            Specifies the number of full passes over the memory matrix ($t \ge 1$). 
+            Each pass applies the 64-bit non-linear BlaMka permutation (Function $G$) to mix blocks with previous lanes, multiplying the time needed for offline password guesses.
+          </p>
+        </div>
+
+        <div class="card concept-card">
+          <div class="concept-icon">🔀</div>
+          <h3>Parallelism ($p$)</h3>
+          <p class="concept-role">Independent Execution Lanes</p>
+          <p>
+            Splits the memory matrix into $p$ independent horizontal lanes ($1 \le p \le 2^{24}-1$). 
+            Allows multi-core authentication servers to divide memory across hardware threads while synchronizing at 4 slice boundaries per pass.
+          </p>
+        </div>
+
+        <div class="card concept-card">
+          <div class="concept-icon">🛡️</div>
+          <h3>Argon2id Hybrid Scheme</h3>
+          <p class="concept-role">Best-of-Both-Worlds Defense</p>
+          <p>
+            Combines <strong>Argon2i</strong> (data-independent addressing in the first slice to eliminate cache-timing side-channel leaks) and 
+            <strong>Argon2d</strong> (data-dependent addressing in subsequent slices to maximize GPU/ASIC trade-off resistance). Recommended by RFC 9106 and OWASP.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>
+        <strong>ArgonCore Integration Demo</strong> · Package: <a href="https://www.npmjs.com/package/argoncore" target="_blank" rel="noopener">argoncore@0.1.0</a> · Author: Aadarsh Lekhwani · Apache-2.0 License
+      </p>
+      <p class="footer-sub">
+        Demonstration application using Node.js, Express, and in-memory credential storage. Plaintext passwords are never stored.
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

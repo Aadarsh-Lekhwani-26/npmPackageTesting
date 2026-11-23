@@ -1,0 +1,35 @@
+{
+  "name": "argoncore-integration-demo",
+  "version": "1.0.0",
+  "description": "Production integration and interactive testing demo for the ArgonCore npm package (RFC 9106 Argon2id).",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "keywords": [
+    "argoncore",
+    "argon2",
+    "argon2id",
+    "password-hashing",
+    "authentication",
+    "demo",
+    "express"
+  ],
+  "author": "Aadarsh Lekhwani",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aadarsh-Lekhwani-26/npmPackageTesting.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aadarsh-Lekhwani-26/npmPackageTesting/issues"
+  },
+  "homepage": "https://github.com/Aadarsh-Lekhwani-26/npmPackageTesting#readme",
+  "dependencies": {
+    "argoncore": "^0.1.0",
+    "express": "^5.3.0"
+  }
+}
